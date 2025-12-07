@@ -13,7 +13,7 @@ import random
 # 1. Environment clas
 # =============================================================================
 class MDP:
-    def __init__(self, P, R, gamma, N, M, stop_condition=None):
+    def __init__(self, P, R, gamma, N, M):
         """
         Initialize a Markov Decision Problem (MDP)
 
@@ -38,7 +38,6 @@ class MDP:
         self.M = M          # Number of actions
         self.S = self._create_states()
         self.A = self._create_actions()
-        self.stop_condition = stop_condition
 
         # Check discount factor validity
         if not (0 <= gamma <= 1):
@@ -77,13 +76,8 @@ class MDP:
 
         # reward for that transition
         reward = self.R[s_idx, a_idx, next_s_idx]
-
-        done = False
-        
-        if self.stop_condition is not None:
-            done = self.stop_condition(next_state)
-
-        return next_state, reward, done
+           
+        return next_state, reward
     
 # =============================================================================
 # 2. File reading Function
