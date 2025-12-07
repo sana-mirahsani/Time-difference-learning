@@ -13,6 +13,7 @@ from Environment import MDP, read_mdp_file
 # =============================================================================
 # 1. Taxi driver
 # =============================================================================
+# create stop condition 
 def my_stop(gamma, t, current_state):
     return gamma**t <= 1e-6
 
@@ -22,9 +23,6 @@ def create_taxi_driver_problem():
     print("Read data...")
     transition_func, reward_function = read_mdp_file("data/taxi_driver_data.txt", 3, 3)
     print("Done!")
-
-    # create stop condition 
-    #stop_condition_func = lambda *args, **kwargs: pow(kwargs.get('gamma', 1), kwargs.get('t', 0)) <= 1e-6
 
     # create env object
     print("Create MDP object...")
