@@ -12,7 +12,7 @@ import random
 # 1. Agent class
 # =============================================================================
 class agent_class:
-    def __init__(self, S, A, gamma, terminal_state_idx, EPISODE_BLOCK, total_interaction, calculate_return_immediate, epsilon_decay):
+    def __init__(self, S, A, gamma, terminal_state_idx, EPISODE_BLOCK, total_interaction, calculate_return_immediate, epsilon_decay, T_decay):
         """
         Initialize an agent.
 
@@ -35,6 +35,7 @@ class agent_class:
         self.total_interaction = total_interaction
         self.calculate_return_immediate = calculate_return_immediate
         self.epsilon_decay = epsilon_decay
+        self.T_decay = T_decay
         self.list_of_returns = []
     
         # Check discount factor validity
@@ -42,7 +43,7 @@ class agent_class:
             raise ValueError("Discount factor γ must be between 0 and 1")
         
 
-    def Q_learning_func(self, obj_env, discount_value, initial_state_idx , select_action_strategy, T=1000):
+    def Q_learning_func(self, obj_env, discount_value, initial_state_idx , select_action_strategy, T=1):
         """
         Q_learning algorithm.
 
@@ -68,6 +69,7 @@ class agent_class:
         num_visit = np.zeros((len(self.S),len(self.A)), dtype=int)
         epsilon = 1.0           # initial epsilon
         epsilon_min = 0.01       # optional lower bound
+        T_min = 0.05
         epsilon_values = [] # to check the condition of epsilon later
         total_interaction = 0 # in all episodes
 
@@ -92,7 +94,7 @@ class agent_class:
                     a_idx = self.epsilon_greedy(s_idx, Q_hat, self.A, epsilon) 
                 
                 elif select_action_strategy == "Boltzmann":
-                    a_idx = self.boltzmann(self.s, Q_hat, self.A, epsilon, T) 
+                    a_idx = self.boltzmann(s_idx, Q_hat, self.A, T) 
 
                 else:
                     raise ValueError("No action strategy was provided.")
@@ -139,6 +141,9 @@ class agent_class:
             # Decreasing epsilon for epsilon greedy
             epsilon = max(epsilon_min, epsilon * self.epsilon_decay)
 
+            # Decreasing temperture
+            T = max(T_min, T * self.T_decay)
+
         # end of a block of episodes
                 
         return Q_hat, epsilon_values, total_interaction
@@ -155,9 +160,42 @@ class agent_class:
             a = np.argmax(Q_hat[s_idx])
             return a
         
-    def boltzmann(self, s, Q_hat, A, epsilon, T):
-        pass
+    def boltzmann(self, s_idx, Q_hat, A, T):
+            
+        """
+        Boltzmann (softmax) action selection.
 
+        Args:
+            s_idx : int
+                Current state index
+            Q_hat : np.ndarray
+                Q-table of shape (num_states, num_actions)
+            A : np.ndarray or list
+                Action space
+            T : float
+                Temperature (T > 0)
+
+        Returns:
+            a_idx : int
+                Selected action index
+        """
+        if T <= 0:
+            raise ValueError("Temperature T must be > 0")
+
+        # Extract Q-values for the current state
+        q_values = Q_hat[s_idx]
+
+        # Numerical stability trick: subtract max
+        q_values_stable = q_values - np.max(q_values)
+
+        # Compute softmax probabilities
+        exp_q = np.exp(q_values_stable / T)
+        probs = exp_q / np.sum(exp_q)
+
+        # Sample action according to the probabilities
+        a_idx = np.random.choice(len(A), p=probs)
+
+        return a_idx
 
     def Evidence_of_eligibility_func(self):
         pass
@@ -182,7 +220,7 @@ class agent_class:
     def trainning(self, RL_method, action_strategy, env_obj, initial_state_idx):
 
         if RL_method == "Q_Learning":
-            Q_hat, epsilon_values, total_interaction = self.Q_learning_func(env_obj, self.gamma, initial_state_idx, action_strategy)
+            Q_hat, epsilon_values, total_interaction = self.Q_learning_func(env_obj, self.gamma, initial_state_idx, action_strategy, T=10)
             return Q_hat, epsilon_values, total_interaction, self.list_of_returns
         
         elif RL_method == "SARSA":

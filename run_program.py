@@ -9,7 +9,7 @@ class solve_mdp():
     def __init__(self, file_name, problem_name, 
                  S, A, gamma, isdeterministic, 
                  RL_method, action_strategy, Q_optimal_policy, initial_state_idx, tolerance, terminal_state_idx, 
-                 EPISODE_BLOCK, calculate_return_immediate, total_interaction, epsilon_decay):
+                 EPISODE_BLOCK, calculate_return_immediate, total_interaction, epsilon_decay, num_execution, version_plot, T_decay):
         
         self.file_name=file_name
         self.problem_name=problem_name
@@ -30,6 +30,9 @@ class solve_mdp():
         self.calculate_return_immediate = calculate_return_immediate
         self.total_interaction = total_interaction
         self.epsilon_decay = epsilon_decay
+        self.num_execution = num_execution
+        self.version_plot = version_plot
+        self.T_decay = T_decay
 
     def read_mdp_file(self, path=None, N=1, M=1):
         """
@@ -87,7 +90,7 @@ class solve_mdp():
                 row[-1] = max(0.0, min(1.0, 1.0 - np.sum(row[:-1])))
         return P
     
-    def implement_epsilon(self, epsilon_values):
+    def implement_epsilon(self, returns_all_exec, version):
         """
         Plot all epsilon values during time to check if it decreases slowly or not.
 
@@ -97,14 +100,75 @@ class solve_mdp():
         Returns:
             None
         """
-        plt.figure(figsize=(8,4))
-        plt.plot(range(len(epsilon_values)), epsilon_values, label='Epsilon')
-        plt.xlabel('Episode')
-        plt.ylabel('value')
-        plt.title('Return value over episodes')
-        plt.grid(True)
-        plt.legend()
-        plt.show()
+        returns = np.array(returns_all_exec)   # shape (K, T)
+                
+        if returns.ndim == 1: num_exec, num_episodes = 1, returns.shape[0]
+        else: num_exec, num_episodes = returns.shape
+
+        episodes = np.arange(num_episodes)
+        match version:
+
+            case 0:
+                pass
+
+            case 1: # draw learning curves for all executions
+
+                plt.figure()
+                for k in range(num_exec):
+                    plt.plot(episodes, returns[k], alpha=0.5)  # one curve per execution
+
+                plt.xlabel("Episode")
+                plt.ylabel("Total return G")
+                plt.title(f"Learning curves for {num_exec} executions")
+                plt.show()
+
+            case 2: # plot mean and std
+                mean_returns = np.mean(returns, axis=0)
+                std_returns = np.std(returns, axis=0)
+
+                plt.figure()
+                plt.plot(episodes, mean_returns)
+                plt.fill_between(
+                    episodes,
+                    mean_returns - std_returns,
+                    mean_returns + std_returns,
+                    alpha=0.3
+                )
+
+                plt.xlabel("Episode")
+                plt.ylabel("Total return G")
+                plt.title("Mean learning curve ± 1 std")
+                plt.show()
+
+            case 3: # plot median
+                median_returns = np.median(returns, axis=0)
+                q25 = np.percentile(returns, 25, axis=0)
+                q75 = np.percentile(returns, 75, axis=0)
+
+                plt.figure()
+                plt.plot(episodes, median_returns)
+                plt.fill_between(episodes, q25, q75, alpha=0.3)
+
+                plt.xlabel("Episode")
+                plt.ylabel("Total return G")
+                plt.title("Median learning curve + quartiles")
+                plt.show()
+
+            case 4: # plot epsilon
+                
+                num_exec, num_episodes = 1, len(returns_all_exec)
+                episodes = np.arange(num_episodes)
+            
+                plt.figure()
+                plt.plot(episodes, returns_all_exec, alpha=0.5)  # one curve per execution
+
+                plt.xlabel("Episode")
+                plt.ylabel("Epsilon")
+                plt.title(f"Epsilon for e-greedy strategy for 1 executions")
+                plt.show()
+
+            case _:
+                raise ValueError("Not good value for version variable.")
 
     def derive_optimal_policy(self, Q_hat, states, actions):
         """
@@ -141,7 +205,7 @@ class solve_mdp():
 
         Q_hat = np.zeros((len(self.states),len(self.actions)), dtype=float)
         total_return_for_executions = []
-
+    
         for num in range(num_execution):
 
             # save the old Q_hat
@@ -180,19 +244,19 @@ class solve_mdp():
 
         # create agent
         print("Create agent...")
-        agent_obj = agent_class(self.states, self.actions, self.gamma, self.terminal_state_idx, self.EPISODE_BLOCK, self.total_interaction, self.calculate_return_immediate, self.epsilon_decay)
+        agent_obj = agent_class(self.states, self.actions, self.gamma, self.terminal_state_idx, self.EPISODE_BLOCK, self.total_interaction, self.calculate_return_immediate, self.epsilon_decay, self.T_decay)
         print("Done!")
 
         # start training
         print("Start training...")
-        Q_hat, epsilon_values, total_interaction, list_of_returns = self.run_execution(env_obj, agent_obj, num_execution=1)
+        Q_hat, epsilon_values, total_interaction, list_of_returns = self.run_execution(env_obj, agent_obj, self.num_execution)
         print("training Done!")
         
         # implement epsilon trend
-        self.implement_epsilon(epsilon_values)
+        #self.implement_epsilon(epsilon_values, version=4)
 
         # implement returns trend
-        self.implement_epsilon(list_of_returns[0])
+        self.implement_epsilon(list_of_returns, self.version_plot)
         
         # Drive optimal policy
         self.derive_optimal_policy(Q_hat,self.states, self.actions)
@@ -203,14 +267,21 @@ class solve_mdp():
         print("=========== total_interaction ===========")
         print(total_interaction)
 
+# ============== Taxi driver
+#mdp_problem = solve_mdp(file_name="data/taxi_driver.txt", problem_name="taxi_driver", 
+#                        S=np.array([0,1,2]), A=np.array([0,1,2]), gamma=0.99, isdeterministic=False, 
+#                        RL_method="Q_Learning", action_strategy="Boltzmann", Q_optimal_policy=None, 
+#                        initial_state_idx=None, tolerance=0.1, terminal_state_idx=None, EPISODE_BLOCK=5,
+#                        calculate_return_immediate=True, total_interaction=None, epsilon_decay=0.99, num_execution=10,version_plot=1, T_decay=0.99)
 
+# ============== Labyrinthes
+# orange cell index = 11
+# green cell index = 23
 mdp_problem = solve_mdp(file_name="data/labyrinthes.txt", problem_name="labyrinthes", 
                         S=np.arange(24), A=np.array([0,1,2,3]), gamma=0.95, isdeterministic=True, 
-                        RL_method="Q_Learning", action_strategy="epsilon_greedy", Q_optimal_policy=None, 
+                        RL_method="Q_Learning", action_strategy="Boltzmann", Q_optimal_policy=None, 
                         initial_state_idx=11, tolerance=0.1, terminal_state_idx=23, EPISODE_BLOCK=12,
-                        calculate_return_immediate=True, total_interaction=None, epsilon_decay=0.99)
+                        calculate_return_immediate=True, total_interaction=None, epsilon_decay=0.99, num_execution=10,version_plot=1, T_decay=0.99)
 
 mdp_problem.main()
 
-# orange cell index = 11
-# green cell index = 23
