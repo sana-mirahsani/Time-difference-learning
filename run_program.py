@@ -8,7 +8,8 @@ import matplotlib.pyplot as plt
 class solve_mdp():
     def __init__(self, file_name, problem_name, 
                  S, A, gamma, isdeterministic, 
-                 RL_method, action_strategy, Q_optimal_policy, initial_state_idx, tolerance, terminal_state_idx, EPISODE_BLOCK):
+                 RL_method, action_strategy, Q_optimal_policy, initial_state_idx, tolerance, terminal_state_idx, 
+                 EPISODE_BLOCK, calculate_return_immediate, total_interaction, epsilon_decay):
         
         self.file_name=file_name
         self.problem_name=problem_name
@@ -24,7 +25,11 @@ class solve_mdp():
         self.initial_state_idx=initial_state_idx 
         self.tolerance=tolerance 
         self.terminal_state_idx = terminal_state_idx
+
         self.EPISODE_BLOCK = EPISODE_BLOCK
+        self.calculate_return_immediate = calculate_return_immediate
+        self.total_interaction = total_interaction
+        self.epsilon_decay = epsilon_decay
 
     def read_mdp_file(self, path=None, N=1, M=1):
         """
@@ -95,8 +100,8 @@ class solve_mdp():
         plt.figure(figsize=(8,4))
         plt.plot(range(len(epsilon_values)), epsilon_values, label='Epsilon')
         plt.xlabel('Episode')
-        plt.ylabel('Epsilon value')
-        plt.title('Epsilon decay over episodes')
+        plt.ylabel('value')
+        plt.title('Return value over episodes')
         plt.grid(True)
         plt.legend()
         plt.show()
@@ -131,6 +136,35 @@ class solve_mdp():
         print(optimal_policy)
 
         return optimal_policy
+    
+    def run_execution(self, env_obj, agent_obj, num_execution=1, tolerance=0.1, Q_optimal=None):
+
+        Q_hat = np.zeros((len(self.states),len(self.actions)), dtype=float)
+        total_return_for_executions = []
+
+        for num in range(num_execution):
+
+            # save the old Q_hat
+            Old_Q_hat = Q_hat.copy() 
+
+            # calculate the optimal Q_hat 
+            Q_hat, epsilon_values, total_interaction, list_of_returns = agent_obj.trainning(self.RL_method, self.action_strategy, env_obj, self.initial_state_idx)
+
+            # save R of an execution
+            total_return_for_executions.append(list_of_returns)
+
+            # check the convergence
+            if Q_optimal:
+                delta = np.max(np.abs(Q_hat - Q_optimal))
+                
+            else:
+                delta = np.max(np.abs(Q_hat - Old_Q_hat))
+                
+            if delta < tolerance:
+                print("Convergence happend!")
+                break
+
+        return Q_hat, epsilon_values, total_interaction, total_return_for_executions
 
     def main(self):
         print(f'====== {self.problem_name} ======')
@@ -146,16 +180,19 @@ class solve_mdp():
 
         # create agent
         print("Create agent...")
-        agent_obj = agent_class(self.states, self.actions, self.gamma, self.terminal_state_idx, self.EPISODE_BLOCK)
+        agent_obj = agent_class(self.states, self.actions, self.gamma, self.terminal_state_idx, self.EPISODE_BLOCK, self.total_interaction, self.calculate_return_immediate, self.epsilon_decay)
         print("Done!")
 
         # start training
         print("Start training...")
-        Q_hat, epsilon_values, total_interaction = agent_obj.trainning(self.RL_method, self.action_strategy, self.Q_optimal_policy, env_obj, self.initial_state_idx, self.tolerance)
+        Q_hat, epsilon_values, total_interaction, list_of_returns = self.run_execution(env_obj, agent_obj, num_execution=1)
         print("training Done!")
         
         # implement epsilon trend
         self.implement_epsilon(epsilon_values)
+
+        # implement returns trend
+        self.implement_epsilon(list_of_returns[0])
         
         # Drive optimal policy
         self.derive_optimal_policy(Q_hat,self.states, self.actions)
@@ -167,8 +204,13 @@ class solve_mdp():
         print(total_interaction)
 
 
-mdp_problem = solve_mdp(file_name="data/taxi_driver_data.txt", problem_name="Taxi driver", 
-                        S=np.array([0,1,2]), A=np.array([0,1,2]), gamma=0.9, isdeterministic=False, 
-                        RL_method="Q_Learning", action_strategy="epsilon_greedy", Q_optimal_policy=None, initial_state_idx=1, tolerance=0.1, terminal_state_idx=None, EPISODE_BLOCK=50)
+mdp_problem = solve_mdp(file_name="data/labyrinthes.txt", problem_name="labyrinthes", 
+                        S=np.arange(24), A=np.array([0,1,2,3]), gamma=0.95, isdeterministic=True, 
+                        RL_method="Q_Learning", action_strategy="epsilon_greedy", Q_optimal_policy=None, 
+                        initial_state_idx=11, tolerance=0.1, terminal_state_idx=23, EPISODE_BLOCK=12,
+                        calculate_return_immediate=True, total_interaction=None, epsilon_decay=0.99)
 
 mdp_problem.main()
+
+# orange cell index = 11
+# green cell index = 23
