@@ -9,7 +9,7 @@ class solve_mdp():
     def __init__(self, file_name, problem_name, 
                  S, A, gamma, isdeterministic, 
                  RL_method, action_strategy, Q_optimal_policy, initial_state_idx, tolerance, terminal_state_idx, 
-                 EPISODE_BLOCK, calculate_return_immediate, total_interaction, epsilon_decay, num_execution, version_plot, T_decay):
+                 EPISODE_BLOCK, calculate_return_immediate, total_interaction, epsilon_decay, num_execution, version_plot, T_decay, lambda_value):
         
         self.file_name=file_name
         self.problem_name=problem_name
@@ -33,6 +33,7 @@ class solve_mdp():
         self.num_execution = num_execution
         self.version_plot = version_plot
         self.T_decay = T_decay
+        self.lambda_value=lambda_value
 
     def read_mdp_file(self, path=None, N=1, M=1):
         """
@@ -244,7 +245,7 @@ class solve_mdp():
 
         # create agent
         print("Create agent...")
-        agent_obj = agent_class(self.states, self.actions, self.gamma, self.terminal_state_idx, self.EPISODE_BLOCK, self.total_interaction, self.calculate_return_immediate, self.epsilon_decay, self.T_decay)
+        agent_obj = agent_class(self.states, self.actions, self.gamma, self.terminal_state_idx, self.EPISODE_BLOCK, self.total_interaction, self.calculate_return_immediate, self.epsilon_decay, self.T_decay, self.lambda_value)
         print("Done!")
 
         # start training
@@ -268,20 +269,19 @@ class solve_mdp():
         print(total_interaction)
 
 # ============== Taxi driver
-#mdp_problem = solve_mdp(file_name="data/taxi_driver.txt", problem_name="taxi_driver", 
-#                        S=np.array([0,1,2]), A=np.array([0,1,2]), gamma=0.99, isdeterministic=False, 
-#                        RL_method="Q_Learning", action_strategy="Boltzmann", Q_optimal_policy=None, 
-#                        initial_state_idx=None, tolerance=0.1, terminal_state_idx=None, EPISODE_BLOCK=5,
-#                        calculate_return_immediate=True, total_interaction=None, epsilon_decay=0.99, num_execution=10,version_plot=1, T_decay=0.99)
+mdp_problem = solve_mdp(file_name="data/taxi_driver.txt", problem_name="taxi_driver", 
+                        S=np.array([0,1,2]), A=np.array([0,1,2]), gamma=0.99, isdeterministic=False, 
+                        RL_method="Evidence_of_eligibility", action_strategy="Boltzmann", Q_optimal_policy=None, 
+                        initial_state_idx=None, tolerance=0.1, terminal_state_idx=None, EPISODE_BLOCK=5,
+                        calculate_return_immediate=True, total_interaction=None, epsilon_decay=0.99, num_execution=1 ,version_plot=1, T_decay=0.99, lambda_value=0.8)
 
 # ============== Labyrinthes
 # orange cell index = 11
 # green cell index = 23
-mdp_problem = solve_mdp(file_name="data/labyrinthes.txt", problem_name="labyrinthes", 
-                        S=np.arange(24), A=np.array([0,1,2,3]), gamma=0.95, isdeterministic=True, 
-                        RL_method="Q_Learning", action_strategy="Boltzmann", Q_optimal_policy=None, 
-                        initial_state_idx=11, tolerance=0.1, terminal_state_idx=23, EPISODE_BLOCK=12,
-                        calculate_return_immediate=True, total_interaction=None, epsilon_decay=0.99, num_execution=10,version_plot=1, T_decay=0.99)
+#mdp_problem = solve_mdp(file_name="data/labyrinthes.txt", problem_name="labyrinthes", 
+#                        S=np.arange(24), A=np.array([0,1,2,3]), gamma=0.95, isdeterministic=True, 
+#                        RL_method="Evidence_of_eligibility", action_strategy="Boltzmann", Q_optimal_policy=None, 
+#                        initial_state_idx=11, tolerance=0.1, terminal_state_idx=23, EPISODE_BLOCK=12,
+#                        calculate_return_immediate=True, total_interaction=None, epsilon_decay=0.99, num_execution=10,version_plot=1, T_decay=0.99, lambda_value=0.8)
 
 mdp_problem.main()
-
