@@ -155,7 +155,21 @@ class agent_class:
 
         return Q_hat, epsilon_values, total_interaction
     def sarsa(self):
-        pass
+
+        # Initializing
+        Q_hat = np.zeros((len(self.S),len(self.A)), dtype=float)
+        num_visit = np.zeros((len(self.S),len(self.A)), dtype=int)
+        epsilon = 1.0           # initial epsilon
+        epsilon_min = 0.01       # optional lower bound
+        T_min = 0.05
+        epsilon_values = [] # to check the condition of epsilon later
+        total_interaction_manual = 0 # in all episodes
+
+        # inside of a block of episodes
+        for episode in range(self.EPISODE_BLOCK):
+            pass
+
+
     
     def Evidence_of_eligibility_func(self, obj_env, gamma, lambda_value, initial_state_idx, select_action_strategy, T=1, num_episode=20):
         # Initializing
@@ -229,7 +243,7 @@ class agent_class:
                 # Calculate reward immediate
                 if self.calculate_return_immediate:
                     R += self.calculate_return_immediate_func(self.gamma, step, reward)
-                    
+
                 # check the stop condition
                 done = self.stop_condition(obj_env.gamma, step, s_idx, self.total_interaction)
 

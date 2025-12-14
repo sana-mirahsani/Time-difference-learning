@@ -271,9 +271,9 @@ class solve_mdp():
 # ============== Taxi driver
 mdp_problem = solve_mdp(file_name="data/taxi_driver.txt", problem_name="taxi_driver", 
                         S=np.array([0,1,2]), A=np.array([0,1,2]), gamma=0.99, isdeterministic=False, 
-                        RL_method="Evidence_of_eligibility", action_strategy="Boltzmann", Q_optimal_policy=None, 
-                        initial_state_idx=None, tolerance=0.1, terminal_state_idx=None, EPISODE_BLOCK=5,
-                        calculate_return_immediate=True, total_interaction=None, epsilon_decay=0.99, num_execution=1 ,version_plot=1, T_decay=0.99, lambda_value=0.8)
+                        RL_method="Q_Learning", action_strategy="Boltzmann", Q_optimal_policy=None, 
+                        initial_state_idx=None, tolerance=0.1, terminal_state_idx=None, EPISODE_BLOCK=10,
+                        calculate_return_immediate=True, total_interaction=None, epsilon_decay=0.99, num_execution=30 ,version_plot=2, T_decay=0.99, lambda_value=0.8)
 
 # ============== Labyrinthes
 # orange cell index = 11
@@ -283,5 +283,14 @@ mdp_problem = solve_mdp(file_name="data/taxi_driver.txt", problem_name="taxi_dri
 #                        RL_method="Evidence_of_eligibility", action_strategy="Boltzmann", Q_optimal_policy=None, 
 #                        initial_state_idx=11, tolerance=0.1, terminal_state_idx=23, EPISODE_BLOCK=12,
 #                        calculate_return_immediate=True, total_interaction=None, epsilon_decay=0.99, num_execution=10,version_plot=1, T_decay=0.99, lambda_value=0.8)
+
+# ============== Labyrinthes avec clé
+# orange cell index = 11
+# green cell index = 23
+#mdp_problem = solve_mdp(file_name="data/cc2.laby.avec.clé.txt", problem_name="cc2.laby.avec.clé", 
+#                        S=np.arange(44), A=np.array([0,1,2,3,4]), gamma=0.95, isdeterministic=True, 
+#                        RL_method="Q_Learning", action_strategy="Boltzmann", Q_optimal_policy=None, 
+#                        initial_state_idx=19, tolerance=0.1, terminal_state_idx=12, EPISODE_BLOCK=12,
+#                        calculate_return_immediate=True, total_interaction=None, epsilon_decay=0.99, num_execution=1,version_plot=1, T_decay=0.99, lambda_value=0.8)
 
 mdp_problem.main()
